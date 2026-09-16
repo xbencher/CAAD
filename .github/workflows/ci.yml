@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  backend:
+    name: Backend — lint, type-check, migrate, test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres-test:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: proxi
+          POSTGRES_PASSWORD: proxi
+          POSTGRES_DB: proxi_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U proxi -d proxi_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis-test:
+        image: redis:7
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ENV: test
+      DATABASE_URL: postgresql+asyncpg://proxi:proxi@localhost:5433/proxi_test
+      REDIS_URL: redis://localhost:6380/0
+      JWT_SECRET: ci-test-secret-please-change-1234
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint — ruff
+        run: uv run ruff check .
+
+      - name: Type-check — mypy
+        run: uv run mypy app
+
+      - name: Run Alembic migrations
+        run: uv run alembic upgrade head
+
+      - name: Test with coverage
+        run: uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=85
+
+  mobile:
+    name: Mobile — type-check, lint, test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check — tsc
+        run: npx tsc --noEmit
+
+      - name: Lint — eslint
+        run: npx eslint .
+
+      - name: Test — jest
+        run: npm test -- --watchAll=false --ci

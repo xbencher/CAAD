@@ -1,0 +1,96 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: proxi
+      POSTGRES_PASSWORD: proxi
+      POSTGRES_DB: proxi
+    ports:
+      - "5442:5432"
+    volumes:
+      - proxi_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proxi -d proxi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: quay.io/minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-proxi}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-proxi12345}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - proxi_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-proxi}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-proxi12345}
+      MINIO_BUCKET: ${MINIO_BUCKET:-proxi-dev}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+      mc mb -p local/$$MINIO_BUCKET &&
+      exit 0
+      "
+
+  postgres-test:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    profiles: ["test"]
+    environment:
+      POSTGRES_USER: proxi
+      POSTGRES_PASSWORD: proxi
+      POSTGRES_DB: proxi_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proxi -d proxi_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis-test:
+    image: redis:7
+    restart: unless-stopped
+    profiles: ["test"]
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  proxi_postgres_data:
+  proxi_minio_data:
