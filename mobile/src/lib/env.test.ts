@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 describe("env", () => {
   beforeEach(() => {
     jest.resetModules();

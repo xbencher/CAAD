@@ -40,7 +40,9 @@ def _apply_migrations() -> None:
 
 @pytest_asyncio.fixture(scope="session")
 async def engine(_apply_migrations: None) -> AsyncIterator[AsyncEngine]:
-    test_engine = create_async_engine(get_settings().database_url)
+    test_engine = create_async_engine(
+        get_settings().database_url, connect_args={"statement_cache_size": 0}
+    )
     yield test_engine
     await test_engine.dispose()
 

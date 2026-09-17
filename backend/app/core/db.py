@@ -17,7 +17,11 @@ class Base(DeclarativeBase):
 
 
 def create_engine() -> AsyncEngine:
-    return create_async_engine(get_settings().database_url, pool_pre_ping=True)
+    settings = get_settings()
+    connect_args = {"statement_cache_size": 0} if settings.env == "test" else {}
+    return create_async_engine(
+        settings.database_url, pool_pre_ping=True, connect_args=connect_args
+    )
 
 
 _engine: AsyncEngine = create_engine()

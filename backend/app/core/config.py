@@ -5,6 +5,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["dev", "test", "e2e", "prod"]
+SmsProviderName = Literal["fake"]
 
 
 class Settings(BaseSettings):
@@ -23,6 +24,25 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
     jwt_secret: str = Field(min_length=16)
+
+    # CP-1: required secrets — fail fast if missing
+    otp_pepper: str = Field(min_length=16)
+    phone_hash_pepper: str = Field(min_length=16)
+
+    # CP-1: JWT TTLs
+    jwt_access_ttl_seconds: int = 900       # 15 minutes
+    jwt_refresh_ttl_seconds: int = 2_592_000  # 30 days
+
+    # CP-1: versioned consents — clients must accept these exact versions
+    current_terms_version: str = "1.0"
+    current_privacy_version: str = "1.0"
+
+    # CP-1: SMS provider — "fake" in dev/test; real provider added in CP-9
+    sms_provider: SmsProviderName = "fake"
+
+    # BR-08: daily request quotas
+    free_daily_requests: int = 3
+    member_daily_requests: int = 50
 
     log_level: str = "INFO"
     api_v1_prefix: str = "/api/v1"

@@ -8,11 +8,18 @@ import HealthScreen from "./health";
 
 const HEALTH_URL = "http://localhost:8000/api/v1/health";
 
-function renderHealthScreen() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+let queryClient: QueryClient;
+
+async function renderHealthScreen() {
+  queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        gcTime: 0,
+      },
+    },
   });
-  return render(
+  return await render(
     <QueryClientProvider client={queryClient}>
       <HealthScreen />
     </QueryClientProvider>,
@@ -20,10 +27,13 @@ function renderHealthScreen() {
 }
 
 describe("HealthScreen", () => {
+  afterEach(() => {
+    queryClient?.clear();
+  });
   it('shows "ok" when the backend responds with 200', async () => {
     server.use(http.get(HEALTH_URL, () => HttpResponse.json({ status: "ok" })));
 
-    renderHealthScreen();
+    await renderHealthScreen();
 
     await waitFor(() => expect(screen.getByTestId("health-status")).toHaveTextContent("ok"));
   });
@@ -38,7 +48,7 @@ describe("HealthScreen", () => {
       ),
     );
 
-    renderHealthScreen();
+    await renderHealthScreen();
 
     await waitFor(() =>
       expect(screen.getByTestId("health-status")).toHaveTextContent(/error: boom/),
