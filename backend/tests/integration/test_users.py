@@ -32,7 +32,7 @@ async def _login(client: AsyncClient, phone: str = VALID_PHONE) -> str:
         "/api/v1/auth/otp/verify",
         json={"phone": phone, "code": code, "device_id": "dev"},
     )
-    return resp.json()["access_token"]
+    return str(resp.json()["access_token"])
 
 
 def _auth(token: str) -> dict[str, str]:

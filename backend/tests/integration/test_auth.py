@@ -19,6 +19,7 @@ All required tests:
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -46,7 +47,7 @@ async def _verify_otp(
     client: AsyncClient,
     phone: str = VALID_PHONE,
     device_id: str = "test-device",
-) -> dict:
+) -> dict[str, Any]:
     # Get OTP from fake provider via dev endpoint
     otp_resp = await client.get("/api/v1/dev/last-otp", params={"phone": phone})
     code = otp_resp.json()["code"]
@@ -55,7 +56,7 @@ async def _verify_otp(
         json={"phone": phone, "code": code, "device_id": device_id},
     )
     assert resp.status_code == 200
-    return resp.json()
+    return cast(dict[str, Any], resp.json())
 
 
 # ─────────────────────────── OTP request ────────────────────────────────────
