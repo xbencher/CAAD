@@ -3,8 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react-native";
 import { http, HttpResponse } from "msw";
 import React from "react";
 
-import { server } from "../src/test/msw/server";
-import HealthScreen from "./health";
+import { server } from "../../src/test/msw/server";
+import HealthScreen from "../health";
 
 const HEALTH_URL = "http://localhost:8000/api/v1/health";
 

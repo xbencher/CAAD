@@ -2,9 +2,9 @@ import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { http, HttpResponse } from "msw";
 import React from "react";
 
-import { server } from "../../src/test/msw/server";
-import { useAuthStore } from "../../src/store/auth";
-import DobScreen from "./dob";
+import { server } from "../../../src/test/msw/server";
+import { useAuthStore } from "../../../src/store/auth";
+import DobScreen from "../dob";
 
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({

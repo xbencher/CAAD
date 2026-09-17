@@ -2,8 +2,8 @@ import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { http, HttpResponse } from "msw";
 import React from "react";
 
-import { server } from "../../src/test/msw/server";
-import PhoneScreen from "./phone";
+import { server } from "../../../src/test/msw/server";
+import PhoneScreen from "../phone";
 
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
